@@ -1,103 +1,77 @@
-# Security Architecture
+# Security Architecture — v2
 
-## Overview
-This document describes all security controls implemented in the WC2026 Prediction Platform.
+## Middleware Stack (execution order)
+
+```
+Request →
+  [1] securityHeaders    — Helmet HTTP headers
+  [2] cors               — Strict origin allowlist
+  [3] bodyParser         — 10KB limit, no oversized payloads
+  [4] cookieParser
+  [5] requestContext     — UUID per request, real IP extraction
+  [6] ipBlocklist        — Auto-ban IPs after repeated strikes
+  [7] requestGuard       — Content-Type + Content-Length enforcement
+  [8] apiLimiter         — 100 req/15min per IP
+  [9] speedLimiter       — Progressive slowdown after 50 req
+ [10] csrf               — Double-submit cookie CSRF token
+ [11] hpp                — HTTP Parameter Pollution prevention
+ [12] xssSanitizer       — DOMPurify on all body/query/params
+ [13] threatDetector     — Regex scan for SQLi, XSS, path traversal, SSRF
+      → route handler
+ [14] errorHandler       — No stack trace leakage in production
+```
 
 ---
 
-## Authentication
+## Attack Coverage
 
-| Control | Implementation |
-|---------|---------------|
-| Password hashing | bcrypt (cost factor 12) |
-| Access tokens | JWT, 15-minute expiry, signed with HS256 |
-| Refresh tokens | Opaque 64-byte random hex, httpOnly cookie, 7-day expiry |
-| Token rotation | Every refresh issues a new token and revokes the old one |
-| Token revocation | In-memory blacklist (Redis in production) |
-| Timing-safe login | Dummy hash compared even when user not found |
+| Attack Type | Defense |
+|-------------|---------|
+| SQL Injection | Parameterized queries (pg) + threat pattern detector |
+| XSS | DOMPurify sanitizer + CSP headers + httpOnly cookies |
+| CSRF | Double-submit cookie pattern with timing-safe comparison |
+| Brute Force | Auth rate limiter (10 req/15min) + auto-IP ban |
+| DoS / Flood | Rate limiter + speed limiter + nginx connection limits |
+| Payload Bomb | 10KB body limit (Express + nginx) |
+| Clickjacking | X-Frame-Options: DENY |
+| MIME Sniffing | X-Content-Type-Options: nosniff |
+| Protocol Downgrade | HSTS with preload (1 year) |
+| Parameter Pollution | HPP middleware — deduplicates query params |
+| Path Traversal | Threat detector regex + nginx block |
+| SSRF | Threat detector blocks internal IP patterns |
+| Session Hijacking | HttpOnly + Secure + SameSite=Strict cookies |
+| Token Theft | Access tokens in memory only (not localStorage) |
+| Replay Attacks | Short JWT TTL (15min) + refresh token rotation |
+| Mass Assignment | Zod schema strips all unknown fields |
+| Info Disclosure | Error handler hides stack traces in production |
+| Scanner Bots | nginx blocks sqlmap, nikto, nmap, masscan user-agents |
+| Prediction Cheating | DB trigger locks predictions at match kickoff |
+| Privilege Escalation | RBAC middleware + ownership checks |
 
-## Transport Security
+## Infrastructure
 
-- **HTTPS only** in production (enforced via HSTS with preload)
-- **HSTS header:** `max-age=31536000; includeSubDomains; preload`
-- **TLS:** TLS 1.2+ only (configure on nginx/load balancer)
+- **nginx** terminates TLS, enforces TLS 1.2+, rate-limits at network level
+- **TLS** with Let's Encrypt, ECDHE ciphers only, OCSP stapling
+- **Server tokens off** — nginx version hidden
+- **Dedicated DB user** — no superuser, no DDL access in production
 
-## HTTP Security Headers (via Helmet)
+## Testing
 
-| Header | Value |
-|--------|-------|
-| Content-Security-Policy | Strict — self only, no eval, no inline scripts |
-| X-Frame-Options | DENY (clickjacking protection) |
-| X-Content-Type-Options | nosniff |
-| Referrer-Policy | strict-origin-when-cross-origin |
-| Permissions-Policy | camera=(), microphone=(), geolocation=() |
-| X-Powered-By | Removed |
+Run the security test suite:
+```bash
+cd backend && npm run test:security
+```
 
-## Input Security
+Tests cover: rate limiting, input validation, SQL injection rejection, XSS stripping, security headers, auth token enforcement.
 
-- **Zod validation** on every request body — rejects unknown fields
-- **Body size limit:** 10KB max (rejects payload bombs)
-- **Parameterized SQL queries** — no string interpolation (zero SQL injection risk)
-- **UUID validation** on all ID parameters
+## Checklist Before Production
 
-## Rate Limiting
-
-| Endpoint | Limit |
-|----------|-------|
-| All `/api/*` | 100 req / 15 min per IP |
-| `/api/auth/login` | 10 attempts / 15 min per IP |
-| `/api/auth/register` | 10 req / 15 min per IP |
-| `/api/predictions` | 20 req / 1 min per IP |
-
-Progressive slowdown kicks in after 50 requests.
-
-## CORS
-
-Strict allowlist — only configured frontend origins accepted. Credentials allowed for cookie transport.
-
-## Database Security
-
-- **Row Level Security (RLS)** on `predictions` table — users can only access their own rows
-- **Kickoff lock trigger** — predictions become immutable once a match starts
-- **Refresh token hashing** — stored as SHA-256 hash, never raw
-- **Dedicated DB user** with minimal grants (no superuser, no DDL in production)
-- **SSL connections** enforced in production
-
-## Cookie Security
-
-| Attribute | Value |
-|-----------|-------|
-| HttpOnly | ✅ (JS cannot access refresh token) |
-| Secure | ✅ in production (HTTPS only) |
-| SameSite | Strict |
-| Path | `/api/auth/refresh` only |
-
-## Frontend Security
-
-- Access tokens stored **in memory only** (not localStorage — XSS safe)
-- CSRF token attached to all mutating requests
-- Axios interceptor auto-refreshes tokens silently
-- CSP headers prevent injected script execution
-
-## Audit Logging
-
-All sensitive actions logged with timestamp, user ID, IP, and metadata:
-- Login attempts (success + failure)
-- Logouts
-- Prediction submissions
-- Admin actions
-- Suspicious activity patterns
-
-## Error Handling
-
-Stack traces and internal details **never** returned to the client in production. All errors logged server-side only.
-
-## Dependency Security
-
-- `npm audit` runs in CI on every push
-- Pin all dependency versions
-- Dependabot alerts enabled on GitHub
-
-## Responsible Disclosure
-
-Found a vulnerability? Please open a **private security advisory** on GitHub — do not create a public issue.
+- [ ] Set strong `JWT_SECRET` (min 64 random chars)
+- [ ] Set `NODE_ENV=production`
+- [ ] Configure `ALLOWED_ORIGINS` to your real domain only
+- [ ] Enable SSL in `DATABASE_URL`
+- [ ] Set up Redis for rate limiter + token blacklist (shared state across instances)
+- [ ] Enable Dependabot on GitHub
+- [ ] Configure log aggregation (Datadog / Sentry)
+- [ ] Run `npm audit` — fix any high/critical findings
+- [ ] Enable GitHub secret scanning
