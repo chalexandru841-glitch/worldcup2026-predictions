@@ -1,0 +1,39 @@
+/* Login page extra animations */
+
+@keyframes aurora {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.aurora-bg {
+  background: linear-gradient(-45deg, #0a1628, #0f1f3d, #1a0a2e, #0a1628);
+  background-size: 400% 400%;
+  animation: aurora 12s ease infinite;
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(245, 197, 24, 0.12); }
+  50%       { border-color: rgba(245, 197, 24, 0.28); }
+}
+
+.card-border-glow {
+  animation: border-glow 4s ease-in-out infinite;
+}
+
+@keyframes float-up {
+  0%   { transform: translateY(0px) scale(1);    opacity: 0.07; }
+  50%  { transform: translateY(-20px) scale(1.05); opacity: 0.12; }
+  100% { transform: translateY(0px) scale(1);    opacity: 0.07; }
+}
+
+/* Smooth caret color on inputs */
+input {
+  caret-color: #f5c518;
+}
+
+/* Selection highlight */
+::selection {
+  background: rgba(245, 197, 24, 0.25);
+  color: #ffffff;
+}
