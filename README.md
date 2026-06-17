@@ -1,27 +1,17 @@
-# 🏆 World Cup 2026 — Prediction Platform
+# 🏆 World Cup 2026 Prediction Platform
 
-A sleek, professional web app where users can predict match outcomes for the FIFA World Cup 2026. Features real-time leaderboards, score tracking, animated match cards, and group stage bracket views.
+A professional web app to predict FIFA World Cup 2026 match outcomes with leaderboards, animations, and live scoring.
 
 ## Tech Stack
-- **Frontend:** React + Vite + TailwindCSS + Framer Motion
-- **Backend:** Node.js / Express (or Base44 serverless)
-- **Database:** PostgreSQL (via Supabase or Base44 entities)
-- **Auth:** JWT / OAuth
+- React + Vite + TailwindCSS + Framer Motion
+- Zustand (state management)
+- Node.js / Express (API)
+- PostgreSQL / Supabase
 
-## Features
-- 🔐 User authentication
-- 📅 Match schedule with countdown timers
-- 🎯 Score predictions per match
-- 🏅 Live leaderboard with points system
-- 📊 Group stage standings
-- 🌍 Team profiles with flag graphics
-- 🔔 Email notifications (results & reminders)
-- 🎨 Dark theme, animated transitions, stadium vibes
-
-## Folder Structure
-See `/docs/ARCHITECTURE.md` for full breakdown.
-
-## Getting Started
+## Quick Start
 ```bash
 cd frontend && npm install && npm run dev
+cd backend  && npm install && npm run dev
 ```
+
+See /docs/ARCHITECTURE.md for full structure.
