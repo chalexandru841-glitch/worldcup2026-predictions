@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ParticleField from "../components/common/ParticleField";
+import FloatingFlags from "../components/login/FloatingFlags";
 
 type Mode = "login" | "register";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "11px 14px",
-  background: "#111f35",
-  border: "1px solid rgba(255,255,255,0.07)",
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: 10,
   color: "#d4dce8",
   fontSize: 14,
   outline: "none",
   fontFamily: "Inter, sans-serif",
+  transition: "border-color 0.2s",
 };
 
 export default function LoginPage() {
@@ -47,23 +50,42 @@ export default function LoginPage() {
       alignItems: "center",
       justifyContent: "center",
       padding: 24,
+      position: "relative",
+      overflow: "hidden",
     }}>
+
+      {/* Layer 1 — particle network */}
+      <ParticleField count={55} />
+
+      {/* Layer 2 — floating country flags */}
+      <FloatingFlags />
+
+      {/* Layer 3 — radial glow behind card */}
       <div style={{
-        position: "fixed", inset: 0, pointerEvents: "none",
-        background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(232,184,75,0.04) 0%, transparent 60%)",
+        position: "fixed",
+        width: 640, height: 640,
+        background: "radial-gradient(circle, rgba(232,184,75,0.07) 0%, transparent 65%)",
+        top: "50%", left: "50%",
+        transform: "translate(-50%, -50%)",
+        pointerEvents: "none",
+        zIndex: 1,
       }} />
 
+      {/* Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
         style={{
+          position: "relative", zIndex: 10,
           width: "100%", maxWidth: 400,
-          background: "#0d1626",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 20,
+          background: "rgba(10, 18, 34, 0.88)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border: "1px solid rgba(232,184,75,0.12)",
+          borderRadius: 22,
           padding: "40px 36px",
-          position: "relative",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)",
         }}
       >
         {/* Logo */}
@@ -76,16 +98,16 @@ export default function LoginPage() {
           }}>⚽</div>
           <span style={{
             fontFamily: "Syne, sans-serif", fontWeight: 800,
-            fontSize: 15, letterSpacing: "0.04em", color: "#d4dce8",
+            fontSize: 15, letterSpacing: "0.05em", color: "#d4dce8",
           }}>
             PREDICTOR <span style={{ color: "#e8b84b" }}>26</span>
           </span>
         </div>
 
+        {/* Heading */}
         <h1 style={{
           fontFamily: "Syne, sans-serif", fontWeight: 800,
-          fontSize: 26, color: "#fff", letterSpacing: "-0.02em",
-          marginBottom: 6,
+          fontSize: 26, color: "#fff", letterSpacing: "-0.02em", marginBottom: 6,
         }}>
           {mode === "login" ? "Welcome back." : "Join the game."}
         </h1>
@@ -119,6 +141,7 @@ export default function LoginPage() {
           ))}
         </div>
 
+        {/* Form */}
         <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <AnimatePresence>
             {mode === "register" && (
@@ -154,7 +177,7 @@ export default function LoginPage() {
               placeholder="Password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              style={{ ...inputStyle, paddingRight: 44 }}
+              style={{ ...inputStyle, paddingRight: 48 }}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
             />
             <button
@@ -189,12 +212,12 @@ export default function LoginPage() {
           <motion.button
             type="submit"
             disabled={loading || done}
-            whileHover={{ opacity: 0.9 }}
+            whileHover={{ opacity: 0.9, boxShadow: "0 0 24px rgba(232,184,75,0.25)" }}
             whileTap={{ scale: 0.98 }}
             style={{
               marginTop: 4,
               padding: "11px 0",
-              background: done ? "#22c55e" : "#e8b84b",
+              background: done ? "#22c55e" : "linear-gradient(135deg, #e8b84b, #c99a30)",
               color: "#080e1a",
               fontWeight: 700, fontSize: 14,
               borderRadius: 10, border: "none",
@@ -228,7 +251,8 @@ export default function LoginPage() {
               }}
             >
               <span style={{
-                fontSize: 10, fontWeight: 800, background: "rgba(255,255,255,0.1)",
+                fontSize: 10, fontWeight: 800,
+                background: "rgba(255,255,255,0.08)",
                 borderRadius: 4, padding: "2px 5px", color: "#9ca3af",
               }}>{abbr}</span>
               {label}
@@ -241,6 +265,17 @@ export default function LoginPage() {
           <a href="#" style={{ color: "#4a5568" }}>Terms</a> and{" "}
           <a href="#" style={{ color: "#4a5568" }}>Privacy</a>.
         </p>
+
+        {/* Card bottom glow */}
+        <div style={{
+          position: "absolute", bottom: -12, left: "50%",
+          transform: "translateX(-50%)",
+          width: "55%", height: 32,
+          background: "rgba(232,184,75,0.1)",
+          filter: "blur(18px)",
+          borderRadius: "50%",
+          pointerEvents: "none",
+        }} />
       </motion.div>
     </div>
   );
